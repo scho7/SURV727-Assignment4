@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## GitHub Link
 https://github.com/scho7/SURV727-Assignment4.git
 
+
 ## Packages
 ```{r message=FALSE, warning=FALSE}
 library(bigrquery)
@@ -42,16 +43,8 @@ con
 dbListTables(con)
 ```
 
-```{sql connection = con}
-# crime data in 2016
-SELECT *
-FROM crime
-LIMIT 10;
-```
 
-
-
-### Write a first query that counts the number of rows of the ‘crime‘ table in the year 2016. Use code chunks with {sql connection = con} in order to write SQL code within the document.
+### Write a first query that counts the number of rows of the 'crime' table in the year 2016. Use code chunks with {sql connection = con} in order to write SQL code within the document.
 
 The number of rows of the 'crime' table in the year 2016 is 269841.
 
@@ -65,24 +58,24 @@ LIMIT 10;
 
 ### Next, count the number of arrests grouped by primary_type in 2016. Note that is a somewhat similar task as above, with some adjustments on which rows should be considered. Sort the results, i.e. list the number of arrests in a descending order.
 
-When sorting the count of the number of arrests grouped by primary_type in 2016 in a descending order, the primary_type NARCOTICS has the highest number of arrests in 2016 of 13327, followed by BATTERY (10332) and THEFT (6522).
+When sorting the count of arrests grouped by primary_type in descending order, the primary_type "NARCOTICS" had the highest number of arrests, totaling 13,327. It was followed by "BATTERY" with 10,332 arrests, and "THEFT" with 6,522 arrests.
 
 ```{sql connection = con}
 # way 1
-SELECT primary_type, count(arrest)
+SELECT primary_type, count(*)
 FROM crime
 WHERE year = 2016 AND arrest = TRUE
 GROUP BY primary_type
-ORDER BY COUNT(arrest) DESC;
+ORDER BY count(*) DESC;
 ```
 
 ```{r}
 # way 2
-arr_prm_type_2016 <- "SELECT primary_type, count(arrest)
+arr_prm_type_2016 <- "SELECT primary_type, count(*)
 FROM crime
 WHERE year = 2016 AND arrest = TRUE
 GROUP BY primary_type
-ORDER BY COUNT(arrest) DESC"
+ORDER BY COUNT(*) DESC"
 
 dbGetQuery(con, arr_prm_type_2016)
 ```
@@ -90,7 +83,7 @@ dbGetQuery(con, arr_prm_type_2016)
 
 ### We can also use the date for grouping. Count the number of arrests grouped by hour of the day in 2016. You can extract the latter information from date via EXTRACT(HOUR FROM date). Which time of the day is associated with the most arrests?
 
-When counting the number of arrests grouped by hour of the day in 2016, we can see that time 10 is associated with the most arrests number of 5306, followed by time 11 with the arrests of 5200.
+When counting the number of arrests grouped by the hour of the day in 2016, it shows that the hour "10" is associated with the highest number of arrests, totaling 5,306. Following closely is the hour "11" with 5,200 arrests.
 
 ```{sql connection = con}
 SELECT EXTRACT(HOUR FROM date), count(*)
@@ -103,38 +96,40 @@ ORDER BY count(*) DESC;
 
 ### Focus only on HOMICIDE and count the number of arrests for this incident type, grouped by year. List the results in descending order.
 
-When counting the number of arrests for 'HOMICIDE' incident type, year 2001 has the most highest arrest cases of 430, followed by 2002 with 423 cases.
+When counting the number of arrests for the 'HOMICIDE' incident type, it shows that in the year 2001, there was the highest number of arrests, totaling 430 cases. Following closely, in the year 2002, there were 423 cases of arrests for 'HOMICIDE'.
 
 ```{sql connection = con}
-SELECT year, count(arrest)
+SELECT year, count(*)
 FROM crime
 WHERE primary_type = 'HOMICIDE' AND arrest = TRUE
 GROUP BY year
-ORDER BY count(arrest) DESC;
+ORDER BY count(*) DESC;
 ```
 
 
 ### Find out which districts have the highest numbers of arrests in 2015 and 2016. That is, count the number of arrests in 2015 and 2016, grouped by year and district. List the results in descending order.
 
-In 2016, the district 11 has the highest numbers of arrests with 6575 cases. In 2015, the district 11 also has the highes numbers of arrests with 8974 cases.
+In 2016, District 11 had the highest number of arrests, totaling 6,575 cases. Similarly, in 2015, District 11 also had the highest number of arrests, with 8,974 cases.
 
 ```{sql connection = con}
-SELECT year, district, count(arrest)
+SELECT year, district, count(*)
 FROM crime
 WHERE (year = 2015 OR year = 2016) AND arrest = TRUE
 GROUP BY year, district
-ORDER BY year DESC, count(arrest) DESC;
+ORDER BY year DESC, count(*) DESC;
 ```
 
 
 ### Lets switch to writing queries from within R via the DBI package. Create a query object that counts the number of arrests grouped by primary_type of district 11 in year 2016. The results should be displayed in descending order. Execute the query.
 
+In District 11 in the year 2016, the primary_type "NARCOTICS" had the highest number of cases, totaling 3,634, followed by "BATTERY" with 635 cases.
+
 ```{r}
-arr_dis11_2016 <- "SELECT primary_type, count(arrest)
+arr_dis11_2016 <- "SELECT primary_type, count(*)
 FROM crime
 WHERE (district = 11 AND year = 2016) AND arrest = TRUE
 GROUP BY primary_type
-ORDER BY count(arrest) DESC"
+ORDER BY count(*) DESC"
 
 dbGetQuery(con, arr_dis11_2016)
 ```
@@ -143,16 +138,20 @@ dbGetQuery(con, arr_dis11_2016)
 ### Try to write the very same query, now using the dbplyr package. For this, you need to first map the crime table to a tibble object in R.
 
 ```{r}
-crime <- tbl(con, "crime")
-str(crime)
-class(crime)
+# map the `crime` table to a tibble object in R.
+crime_data <- tbl(con, "crime")
+str(crime_data)
+class(crime_data)
+head(crime_data)
 ```
 
 
 ### Again, count the number of arrests grouped by primary_type of district 11 in year 2016, now using dplyr syntax.
 
+In District 11 in the year 2016, the primary_type "NARCOTICS" had the highest number of cases, totaling 3,634, followed by "BATTERY" with 635 cases. These values match those obtained using the SQL code.
+
 ```{r}
-crime %>%
+crime_data %>%
   filter(district == 11, year == 2016, arrest == TRUE) %>%
   group_by(primary_type) %>%
   summarize(count = n()) %>% 
@@ -162,36 +161,38 @@ crime %>%
 
 ### Count the number of arrests grouped by primary_type and year, still only for district 11. Arrange the result by year.
 
-### Assign the results of the query above to a local R object.
+The code below displays the count of arrests grouped by primary_type and year specifically for District 11. For instance, in the year 2023, there were 403 arrests related to "WEAPONS VIOLATION."
 
 ```{r}
-query <- crime %>%
+crime_data %>%
   filter(district == 11, arrest == TRUE) %>%
   group_by(year, primary_type) %>%
   summarize(count = n()) %>% 
   arrange(desc(year))
-
-query
-
-# translate it into SQL
-show_query(query)
 ```
 
 
-```{r}
+### Assign the results of the query above to a local R object.
 
+We can assign the query above to a local R object 'crim_query'. 
+
+```{r}
+crim_query <- crime_data %>%
+  filter(district == 11, arrest == TRUE) %>%
+  group_by(year, primary_type) %>%
+  summarize(count = n()) %>% 
+  arrange(desc(year)) %>%
+  collect()
 ```
 
 
 ### Confirm that you pulled the data to the local environment by displaying the first ten rows of the saved data set.
 
-```{r}
-sql_data <- 
-  crime %>%
-  head(10) %>%
-  collect()
+The code below shows the first ten rows of the saved data set (crim_query) in the local environment.
 
-str(sql_data)
+```{r}
+head(crim_query, 10)
+str(crim_query)
 ```
 
 
