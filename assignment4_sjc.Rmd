@@ -49,10 +49,9 @@ dbListTables(con)
 The number of rows of the 'crime' table in the year 2016 is 269841.
 
 ```{sql connection = con}
-SELECT count(*)
+SELECT count(*) as count
 FROM crime
-WHERE year = 2016 
-LIMIT 10;
+WHERE year = 2016;
 ```
 
 
@@ -62,7 +61,7 @@ When sorting the count of arrests grouped by primary_type in descending order, t
 
 ```{sql connection = con}
 # way 1
-SELECT primary_type, count(*)
+SELECT primary_type, count(*) as count
 FROM crime
 WHERE year = 2016 AND arrest = TRUE
 GROUP BY primary_type
@@ -71,7 +70,7 @@ ORDER BY count(*) DESC;
 
 ```{r}
 # way 2
-arr_prm_type_2016 <- "SELECT primary_type, count(*)
+arr_prm_type_2016 <- "SELECT primary_type, count(*) as count
 FROM crime
 WHERE year = 2016 AND arrest = TRUE
 GROUP BY primary_type
@@ -86,10 +85,10 @@ dbGetQuery(con, arr_prm_type_2016)
 When counting the number of arrests grouped by the hour of the day in 2016, it shows that the hour "10" is associated with the highest number of arrests, totaling 5,306. Following closely is the hour "11" with 5,200 arrests.
 
 ```{sql connection = con}
-SELECT EXTRACT(HOUR FROM date), count(*)
+SELECT EXTRACT(HOUR FROM date) as hour, count(*) as count
 FROM crime
 WHERE year = 2016 AND arrest = TRUE
-GROUP BY EXTRACT(HOUR FROM date)
+GROUP BY hour
 ORDER BY count(*) DESC;
 ```
 
@@ -99,7 +98,7 @@ ORDER BY count(*) DESC;
 When counting the number of arrests for the 'HOMICIDE' incident type, it shows that in the year 2001, there was the highest number of arrests, totaling 430 cases. Following closely, in the year 2002, there were 423 cases of arrests for 'HOMICIDE'.
 
 ```{sql connection = con}
-SELECT year, count(*)
+SELECT year, count(*) as count
 FROM crime
 WHERE primary_type = 'HOMICIDE' AND arrest = TRUE
 GROUP BY year
@@ -112,7 +111,17 @@ ORDER BY count(*) DESC;
 In 2016, District 11 had the highest number of arrests, totaling 6,575 cases. Similarly, in 2015, District 11 also had the highest number of arrests, with 8,974 cases.
 
 ```{sql connection = con}
-SELECT year, district, count(*)
+# descending order by the number of arrests
+SELECT year, district, count(*) as count
+FROM crime
+WHERE (year = 2015 OR year = 2016) AND arrest = TRUE
+GROUP BY year, district
+ORDER BY count(*) DESC;
+```
+
+```{sql connection = con}
+# descending order by the number of year and arrests
+SELECT year, district, count(*) as count
 FROM crime
 WHERE (year = 2015 OR year = 2016) AND arrest = TRUE
 GROUP BY year, district
@@ -125,7 +134,7 @@ ORDER BY year DESC, count(*) DESC;
 In District 11 in the year 2016, the primary_type "NARCOTICS" had the highest number of cases, totaling 3,634, followed by "BATTERY" with 635 cases.
 
 ```{r}
-arr_dis11_2016 <- "SELECT primary_type, count(*)
+arr_dis11_2016 <- "SELECT primary_type, count(*) as count
 FROM crime
 WHERE (district = 11 AND year = 2016) AND arrest = TRUE
 GROUP BY primary_type
